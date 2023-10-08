@@ -26,10 +26,11 @@ const addBookHandler = (request, h) => {
     const id = nanoid(16)
     const insertedAt = new Date().toISOString();
     const updatedAt = insertedAt
-
+    const finished = (pageCount === readPage);
     const newBook = {
-        id, name, year, author, summary, publisher, pageCount, readPage, reading, insertedAt, updatedAt
+        id, name, year, author, summary, publisher, pageCount, readPage, finished, reading, insertedAt, updatedAt
     }
+    
 
     books.push(newBook)
 
@@ -55,24 +56,59 @@ const addBookHandler = (request, h) => {
     return response;
 }
 
-const getAllBookHandler = () => ({
-    status : 'success',
-    data : {
-        books,
-    },
-})
+const getAllBookHandler = (request, h) => {
+    const { name, finished, reading } = request.query;
+
+    let filteredBooks = books;
+  
+    if (name) {
+      // Filter berdasarkan nama
+      filteredBooks = filteredBooks.filter(
+        (book) => book.name.toLowerCase().includes(name.toLowerCase()),
+      );
+    }
+  
+    if (finished !== undefined) {
+      // Filter berdasarkan status selesai (finished)
+      filteredBooks = filteredBooks.filter(
+        (book) => Number(book.finished) === Number(finished)
+      );
+    }
+  
+    if (reading !== undefined) {
+      // Filter berdasarkan status sedang dibaca (reading)
+      filteredBooks = filteredBooks.filter(
+        (book) => Number(book.reading) === Number(reading)
+      );
+    }
+  
+    const response = h.response({
+      status: 'success',
+      data: {
+        books: filteredBooks.map(
+          (book) => ({ id: book.id, name: book.name, publisher: book.publisher }),
+        ),
+      },
+    });
+  
+    return response;
+  };
+  
 
 const getIdBookHandler = (request, h) => {
     const {bookId} = request.params;
     const book = books.filter((b) => b.id === bookId)[0];
 
     if (book !== undefined) {
-        return {
+        const response = h.response({
             status : 'succes',
             data : {
                 book,
             },
-        }
+        })
+        response.code(200);
+        return response;
+        
     }
     const response = h.response ({
         status : 'fail',
